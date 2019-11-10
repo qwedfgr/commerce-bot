@@ -23,37 +23,39 @@ def get_items(item_id=None):
     headers = {'Authorization': f'Bearer {get_token()}'}
     if item_id:
         params = {'id': item_id, }
-
-    response = requests.get('https://api.moltin.com/v2/products', headers=headers, params=params )
+    response = requests.get('https://api.moltin.com/v2/products', headers=headers, params=params)
     if response.ok:
-        return response.json()
+        return response.json()['data']
     else:
         return None
 
 
-def main():
-    dotenv.load_dotenv()
+def get_item_description(info):
+    price = info['meta']['display_price']['with_tax']
+    description = (f'{info["name"]}\n'
+                   f'{info["description"]}\n'
+                   f'{price["amount"]} {price["currency"]} за кг\n'
+                   f'{info["meta"]["stock"]["level"]} кг на складе')
+    return description
 
-    print(get_token())
+
+def get_file_by_id(image_id):
+    headers = {'Authorization': f'Bearer {get_token()}'}
+    response = requests.get(f'https://api.moltin.com/v2/files/{image_id}', headers=headers)
+    response.raise_for_status()
+    return response.json()['data']['link']['href']
+
+
+def add_item_to_cart(item_id, quantity):
+    dotenv.load_dotenv()
     headers = {
         'Authorization': get_token(),
         'Content-Type': 'application/json',
     }
-
-    data = '{"data": {"id": "397e3ce8-55b8-4999-87e1-1127fb324704","type": "cart_item","quantity": 1}}'
-
+    data = {"data": {"id": item_id, "type": "cart_item", "quantity": quantity}}
     response = requests.post('https://api.moltin.com/v2/carts/reference/items', headers=headers, data=data)
-    print(response)
-    print(response.content)
-    response = requests.get('https://api.moltin.com/v2/carts/:reference', headers=headers)
-
-    print(response)
-    print(response.content)
-    print(get_items())
 
 
-if __name__ == '__main__':
-    main()
 
 
 
