@@ -51,9 +51,9 @@ def add_item_to_cart(chat_id, item_id, quantity):
         'Authorization': get_token(),
         'Content-Type': 'application/json',
     }
-    data = {"data": {"id": item_id, "type": "cart_item", "quantity": quantity}}
-    response = requests.post(f'https://api.moltin.com/v2/carts/:{chat_id}/items', headers=headers, data=data)
-    print(response.json())
+    data = {'data': {'id': item_id, 'type': 'cart_item', 'quantity': int(quantity)}}
+    response = requests.post(f'https://api.moltin.com/v2/carts/:{chat_id}/items', headers=headers, json=data)
+
 
 
 def get_cart(chat_id):
@@ -61,7 +61,8 @@ def get_cart(chat_id):
         'Authorization': get_token(),
         'Content-Type': 'application/json',
     }
-    response = requests.get(f'https://api.moltin.com/v2/carts/carts/:{chat_id}/items', headers=headers)
+    response = requests.get(f'https://api.moltin.com/v2/carts/:{chat_id}/items', headers=headers)
+    print(response.json())
     response.raise_for_status()
 
 
