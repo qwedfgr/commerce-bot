@@ -14,7 +14,8 @@ _database = None
 
 def start(bot, update):
     items = moltin.get_items()
-    keyboard = [[InlineKeyboardButton(item['name'], callback_data=item['id'])] for item in items]
+    items_buttons = [InlineKeyboardButton(item['name'], callback_data=item['id']) for item in items]
+    keyboard = [items_buttons, [InlineKeyboardButton('Корзина', callback_data='cart')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     chat_id, user_reply = get_chat_id_and_reply(update)
     bot.send_message(chat_id=chat_id, text='Выберите товар', reply_markup=reply_markup)
@@ -29,8 +30,12 @@ def handle_menu(bot, update):
     message = update.callback_query.message
 
     quantities = [1, 5, 10]
-    quantities_buttons = [InlineKeyboardButton(f'{q} кг', callback_data=q) for q in quantities]
-    keyboard = [quantities_buttons, [InlineKeyboardButton('Назад', callback_data='menu')]]
+    quantities_buttons = [InlineKeyboardButton(f'{q} кг', callback_data=f'{item_id} {q}') for q in quantities]
+    keyboard = [
+        quantities_buttons,
+        [InlineKeyboardButton('Назад', callback_data='menu')],
+        [InlineKeyboardButton('Корзина', callback_data='cart')]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     image_id = item_info['relationships']['main_image']['data']['id']
@@ -43,11 +48,20 @@ def handle_menu(bot, update):
 
 
 def handle_description(bot, update):
-    if update.callback_query.data == 'menu':
+    chat_id, data = get_chat_id_and_reply(update)
+    if data == 'menu':
         return start(bot, update)
+    elif data == 'cart':
+        handle_cart(bot, update)
     else:
-        pass
+        moltin.add_item_to_cart(chat_id, *data.split())
+        return 'HANDLE_DESCRIPTION'
 
+
+def handle_cart(bot, update):
+    chat_id, user_reply = get_chat_id_and_reply(update)
+    cart = moltin.get_cart(chat_id)
+    print(cart)
 
 def handle_users_reply(bot, update):
     db = get_database_connection()
@@ -61,7 +75,8 @@ def handle_users_reply(bot, update):
     states_functions = {
         'START': start,
         'HANDLE_MENU': handle_menu,
-        'HANDLE_DESCRIPTION': handle_description
+        'HANDLE_DESCRIPTION': handle_description,
+        'HANDLE_CART': handle_cart
     }
     state_handler = states_functions[user_state]
 

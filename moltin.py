@@ -13,9 +13,8 @@ def get_token():
 
     response = requests.post('https://api.moltin.com/oauth/access_token', data=data)
     if response.ok:
-        expires = response.json()['expires']
         token = response.json()['access_token']
-    return token
+    return token if response.ok else None
 
 
 def get_items(item_id=None):
@@ -46,16 +45,39 @@ def get_file_by_id(image_id):
     return response.json()['data']['link']['href']
 
 
-def add_item_to_cart(item_id, quantity):
+def add_item_to_cart(chat_id, item_id, quantity):
     dotenv.load_dotenv()
     headers = {
         'Authorization': get_token(),
         'Content-Type': 'application/json',
     }
     data = {"data": {"id": item_id, "type": "cart_item", "quantity": quantity}}
-    response = requests.post('https://api.moltin.com/v2/carts/reference/items', headers=headers, data=data)
+    response = requests.post(f'https://api.moltin.com/v2/carts/:{chat_id}/items', headers=headers, data=data)
+    print(response.json())
 
 
+def get_cart(chat_id):
+    headers = {
+        'Authorization': get_token(),
+        'Content-Type': 'application/json',
+    }
+    response = requests.get(f'https://api.moltin.com/v2/carts/carts/:{chat_id}/items', headers=headers)
+    response.raise_for_status()
 
+    products = []
+    for product in response.json()['data']:
+        product_info = {
+            'id': product['id'],
+            'product_id': product['product_id'],
+            'name': product['name'],
+            'description': product['description'],
+            'quantity': product['quantity'],
+            'unit_price': product['meta']['display_price']['with_tax']['unit']['formatted'],
+            'total_price': product['meta']['display_price']['with_tax']['value']['formatted'],
+        }
+        products.append(product_info)
+    total_price = response.json()['meta']['display_price']['with_tax']['formatted']
+
+    return {'products': products, 'total_price': total_price}
 
 
