@@ -64,20 +64,5 @@ def get_cart(chat_id):
     response = requests.get(f'https://api.moltin.com/v2/carts/carts/:{chat_id}/items', headers=headers)
     response.raise_for_status()
 
-    products = []
-    for product in response.json()['data']:
-        product_info = {
-            'id': product['id'],
-            'product_id': product['product_id'],
-            'name': product['name'],
-            'description': product['description'],
-            'quantity': product['quantity'],
-            'unit_price': product['meta']['display_price']['with_tax']['unit']['formatted'],
-            'total_price': product['meta']['display_price']['with_tax']['value']['formatted'],
-        }
-        products.append(product_info)
-    total_price = response.json()['meta']['display_price']['with_tax']['formatted']
-
-    return {'products': products, 'total_price': total_price}
 
 
