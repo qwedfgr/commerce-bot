@@ -52,16 +52,37 @@ def handle_description(bot, update):
     if data == 'menu':
         return start(bot, update)
     elif data == 'cart':
-        handle_cart(bot, update)
+        return handle_cart(bot, update)
     else:
         moltin.add_item_to_cart(chat_id, *data.split())
         return 'HANDLE_DESCRIPTION'
 
 
 def handle_cart(bot, update):
-    chat_id, user_reply = get_chat_id_and_reply(update)
-    cart = moltin.get_cart(chat_id)
-    print(cart)
+    chat_id, data = get_chat_id_and_reply(update)
+    cart, buttons = moltin.get_cart(chat_id)
+    message = update.callback_query.message
+    if data == 'cart':
+        moltin.add_item_to_cart(chat_id, *data.split())
+        bot.delete_message(chat_id=message.chat_id, message_id=message.message_id)
+        delete_item_buttons = [[InlineKeyboardButton(text=b[0], callback_data=b[1])] for b in buttons]
+        keyboard = [
+            *delete_item_buttons,
+            [InlineKeyboardButton('В меню', callback_data='menu')]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        bot.send_message(chat_id=chat_id, text=cart, reply_markup=reply_markup)
+        return 'HANDLE_CART'
+    if data == 'menu':
+        return start(bot, update)
+    else:
+        moltin.delete_item_from_cart(chat_id, data)
+        return 'HANDLE_CART'
+
+
+def handle_mail(bot, update):
+    pass
+
 
 def handle_users_reply(bot, update):
     db = get_database_connection()
@@ -76,7 +97,8 @@ def handle_users_reply(bot, update):
         'START': start,
         'HANDLE_MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
-        'HANDLE_CART': handle_cart
+        'HANDLE_CART': handle_cart,
+        'WAITING_MAIL': handle_mail
     }
     state_handler = states_functions[user_state]
 

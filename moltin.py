@@ -1,6 +1,5 @@
 import os
 
-import dotenv
 import requests
 
 
@@ -29,12 +28,16 @@ def get_items(item_id=None):
         return None
 
 
-def get_item_description(info):
+def get_item_description(info, is_cart=False):
     price = info['meta']['display_price']['with_tax']
     description = (f'{info["name"]}\n'
-                   f'{info["description"]}\n'
-                   f'{price["amount"]} {price["currency"]} за кг\n'
-                   f'{info["meta"]["stock"]["level"]} кг на складе')
+                   f'{info["description"]}\n')
+    if is_cart:
+        description += (f'{price["unit"]["formatted"]} за кг\n'
+                        f'Всего в корзине: {price["value"]["formatted"]}\n\n')
+    else:
+        description += (f'{price["amount"]} {price["currency"]} за кг\n'
+                        f'{info["meta"]["stock"]["level"]} кг на складе\n')
     return description
 
 
@@ -46,7 +49,6 @@ def get_file_by_id(image_id):
 
 
 def add_item_to_cart(chat_id, item_id, quantity):
-    dotenv.load_dotenv()
     headers = {
         'Authorization': get_token(),
         'Content-Type': 'application/json',
@@ -55,15 +57,30 @@ def add_item_to_cart(chat_id, item_id, quantity):
     response = requests.post(f'https://api.moltin.com/v2/carts/:{chat_id}/items', headers=headers, json=data)
 
 
-
 def get_cart(chat_id):
     headers = {
         'Authorization': get_token(),
         'Content-Type': 'application/json',
     }
     response = requests.get(f'https://api.moltin.com/v2/carts/:{chat_id}/items', headers=headers)
-    print(response.json())
     response.raise_for_status()
+    items = response.json()['data']
+    cart = ''
+    buttons = []
+    for item in items:
+        cart += get_item_description(item, True)
+        buttons.append([f'Убрать из корзины {item["name"]}', item['id']])
+    total = response.json()['meta']['display_price']['with_tax']['formatted']
+    cart += f'Всего: {total}'
+    return cart, buttons
 
+
+def delete_item_from_cart(chat_id, item_id):
+    headers = {
+        'Authorization': get_token(),
+        'Content-Type': 'application/json',
+    }
+    response = requests.delete(f'https://api.moltin.com/v2/carts/:{chat_id}/items/{item_id}', headers=headers)
+    response.raise_for_status()
 
 
