@@ -54,6 +54,7 @@ def handle_description(bot, update):
     elif data == 'cart':
         return handle_cart(bot, update)
     else:
+        print(data)
         moltin.add_item_to_cart(chat_id, *data.split())
         return 'HANDLE_DESCRIPTION'
 
@@ -63,7 +64,6 @@ def handle_cart(bot, update):
     cart, buttons = moltin.get_cart(chat_id)
     message = update.callback_query.message
     if data == 'cart':
-        moltin.add_item_to_cart(chat_id, *data.split())
         bot.delete_message(chat_id=message.chat_id, message_id=message.message_id)
         delete_item_buttons = [[InlineKeyboardButton(text=b[0], callback_data=b[1])] for b in buttons]
         keyboard = [
@@ -77,7 +77,8 @@ def handle_cart(bot, update):
         return start(bot, update)
     else:
         moltin.delete_item_from_cart(chat_id, data)
-        return 'HANDLE_CART'
+        update.callback_query.data = 'cart'
+        return handle_cart(bot, update)
 
 
 def handle_mail(bot, update):

@@ -67,6 +67,8 @@ def get_cart(chat_id):
     items = response.json()['data']
     cart = ''
     buttons = []
+    if not items:
+        return 'Корзина пуста', buttons
     for item in items:
         cart += get_item_description(item, True)
         buttons.append([f'Убрать из корзины {item["name"]}', item['id']])
