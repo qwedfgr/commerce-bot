@@ -1,4 +1,3 @@
-import logging
 import os
 
 import dotenv
@@ -19,10 +18,15 @@ def start(bot, update):
     reply_markup = InlineKeyboardMarkup(keyboard)
     chat_id, user_reply = get_chat_id_and_reply(update)
     bot.send_message(chat_id=chat_id, text='Выберите товар', reply_markup=reply_markup)
-    return "HANDLE_MENU"
+    if user_reply == 'cart':
+        return handle_cart(bot, update)
+    else:
+        return 'HANDLE_MENU'
 
 
 def handle_menu(bot, update):
+    if update.callback_query.data == 'cart':
+        return handle_cart(bot, update)
     item_id = update.callback_query.data
     item_info = moltin.get_items(item_id=item_id)[0]
     description = moltin.get_item_description(item_info)
@@ -68,13 +72,16 @@ def handle_cart(bot, update):
         delete_item_buttons = [[InlineKeyboardButton(text=b[0], callback_data=b[1])] for b in buttons]
         keyboard = [
             *delete_item_buttons,
-            [InlineKeyboardButton('В меню', callback_data='menu')]
+            [InlineKeyboardButton('В меню', callback_data='menu')],
+            [InlineKeyboardButton('Оплатить', callback_data='waiting_mail')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         bot.send_message(chat_id=chat_id, text=cart, reply_markup=reply_markup)
         return 'HANDLE_CART'
     if data == 'menu':
         return start(bot, update)
+    elif data == 'waiting_mail':
+        return handle_mail(bot, update)
     else:
         moltin.delete_item_from_cart(chat_id, data)
         update.callback_query.data = 'cart'
@@ -82,7 +89,10 @@ def handle_cart(bot, update):
 
 
 def handle_mail(bot, update):
-    pass
+    chat_id, user_reply = get_chat_id_and_reply(update)
+    text = 'Для оформления заказа пришлите, пожалуйста, почту'
+    bot.send_message(chat_id=chat_id, text=text)
+    return 'HANDLE_MENU'
 
 
 def handle_users_reply(bot, update):
@@ -135,7 +145,7 @@ def get_database_connection():
 
 def main():
     dotenv.load_dotenv()
-    token = os.getenv("TOKEN_TG")
+    token = os.getenv('TOKEN_TG')
     updater = Updater(token)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
