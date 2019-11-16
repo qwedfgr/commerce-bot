@@ -42,7 +42,7 @@ def get_item_description(info, is_cart=False):
 
 
 def get_file_by_id(image_id):
-    headers = {'Authorization': f'Bearer {get_token()}'}
+    headers = {'Authorization': get_token()}
     response = requests.get(f'https://api.moltin.com/v2/files/{image_id}', headers=headers)
     response.raise_for_status()
     return response.json()['data']['link']['href']
@@ -86,3 +86,37 @@ def delete_item_from_cart(chat_id, item_id):
     response.raise_for_status()
 
 
+def get_customer(customer_id=None, email=None):
+    headers = {
+        'Authorization': get_token(),
+        'Content-Type': 'application/json',
+    }
+    if customer_id:
+        url = f'https://api.moltin.com/v2/customers/:{customer_id}'
+    elif email:
+        url = f'https://api.moltin.com/v2/customers?filter=eq(email,{email})'
+    else:
+        return
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()['data']
+
+
+def add_customer(name, email):
+    headers = {
+        'Authorization': get_token(),
+        'Content-Type': 'application/json',
+    }
+    data = {
+        'data': {
+            'type': 'customer',
+            'name': str(name),
+            'email': email,
+        }
+    }
+    url = f'https://api.moltin.com/v2/customers'
+    response = requests.post(url, headers=headers, json=data)
+    customer_id = None
+    if response.ok:
+        customer_id = response.json()['data']['id']
+    return customer_id

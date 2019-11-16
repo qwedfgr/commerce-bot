@@ -16,8 +16,10 @@ def start(bot, update):
     items_buttons = [InlineKeyboardButton(item['name'], callback_data=item['id']) for item in items]
     keyboard = [items_buttons, [InlineKeyboardButton('Корзина', callback_data='cart')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+
     chat_id, user_reply = get_chat_id_and_reply(update)
     bot.send_message(chat_id=chat_id, text='Выберите товар', reply_markup=reply_markup)
+
     if user_reply == 'cart':
         return handle_cart(bot, update)
     else:
@@ -58,7 +60,6 @@ def handle_description(bot, update):
     elif data == 'cart':
         return handle_cart(bot, update)
     else:
-        print(data)
         moltin.add_item_to_cart(chat_id, *data.split())
         return 'HANDLE_DESCRIPTION'
 
@@ -81,7 +82,9 @@ def handle_cart(bot, update):
     if data == 'menu':
         return start(bot, update)
     elif data == 'waiting_mail':
-        return handle_mail(bot, update)
+        email_request = 'Для оформления заказа пришлите, пожалуйста, почту'
+        bot.edit_message_text(chat_id=chat_id, text=email_request, message_id=message.message_id)
+        return 'WAITING_MAIL'
     else:
         moltin.delete_item_from_cart(chat_id, data)
         update.callback_query.data = 'cart'
@@ -90,9 +93,13 @@ def handle_cart(bot, update):
 
 def handle_mail(bot, update):
     chat_id, user_reply = get_chat_id_and_reply(update)
-    text = 'Для оформления заказа пришлите, пожалуйста, почту'
-    bot.send_message(chat_id=chat_id, text=text)
-    return 'HANDLE_MENU'
+    customer_id = moltin.add_customer(chat_id, user_reply)
+    if customer_id:
+        update.message.reply_text('Ваш заказ принят')
+        return 'START'
+    else:
+        update.message.reply_text('Неверный адрес электронной почты. Попробуйте еще раз')
+        return 'WAITING_MAIL'
 
 
 def handle_users_reply(bot, update):
