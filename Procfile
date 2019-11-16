@@ -1,1 +1,1 @@
-commerce-bot: python3 main.py
+ecommerce-bot-dvmn: python3 main.py
