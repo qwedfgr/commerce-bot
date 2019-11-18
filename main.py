@@ -46,9 +46,9 @@ def handle_menu(bot, update):
 
     image_id = item_info['relationships']['main_image']['data']['id']
     file_url = moltin.get_file_by_id(image_id)
-    bot.delete_message(chat_id=message.chat_id, message_id=message.message_id)
 
     bot.send_photo(chat_id=message.chat_id, photo=file_url, caption=description, reply_markup=reply_markup)
+    bot.delete_message(chat_id=message.chat_id, message_id=message.message_id)
 
     return 'HANDLE_DESCRIPTION'
 
@@ -56,7 +56,7 @@ def handle_menu(bot, update):
 def handle_description(bot, update):
     chat_id, data = get_chat_id_and_reply(update)
     if data == 'menu':
-        return start(bot, update)
+        return handle_start(bot, update)
     elif data == 'cart':
         return handle_cart(bot, update)
     else:
@@ -69,7 +69,7 @@ def handle_cart(bot, update):
     cart, buttons = moltin.get_cart(chat_id)
     message = update.callback_query.message
     if data == 'cart':
-        bot.delete_message(chat_id=message.chat_id, message_id=message.message_id)
+
         delete_item_buttons = [[InlineKeyboardButton(text=b[0], callback_data=b[1])] for b in buttons]
         keyboard = [
             *delete_item_buttons,
@@ -78,9 +78,10 @@ def handle_cart(bot, update):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         bot.send_message(chat_id=chat_id, text=cart, reply_markup=reply_markup)
+        bot.delete_message(chat_id=message.chat_id, message_id=message.message_id)
         return 'HANDLE_CART'
     if data == 'menu':
-        return start(bot, update)
+        return handle_start(bot, update)
     elif data == 'waiting_mail':
         email_request = 'Для оформления заказа пришлите, пожалуйста, почту'
         bot.edit_message_text(chat_id=chat_id, text=email_request, message_id=message.message_id)
