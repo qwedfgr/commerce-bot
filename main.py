@@ -11,7 +11,7 @@ import moltin
 _database = None
 
 
-def start(bot, update):
+def handle_start(bot, update):
     items = moltin.get_items()
     items_buttons = [InlineKeyboardButton(item['name'], callback_data=item['id']) for item in items]
     keyboard = [items_buttons, [InlineKeyboardButton('Корзина', callback_data='cart')]]
@@ -112,7 +112,7 @@ def handle_users_reply(bot, update):
     else:
         user_state = db.get(chat_id)
     states_functions = {
-        'START': start,
+        'START': handle_start,
         'HANDLE_MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
         'HANDLE_CART': handle_cart,
